@@ -9,6 +9,11 @@ mindmap
       CWE/CVE
     Dev
       Langs/Code
+```
+
+```mermaid
+%%{init: {'theme':'forest'}}%%
+mindmap
   root((Защита окружения разработки))
     T-DEV-COMP Защита рабочих мест разработчика
       T-DEV-COMP-0-1 Применяются практики защиты рабочих мест разработчиков
