@@ -2,67 +2,129 @@
 
 ### DEP Контроль использования сторонних компонентов
 
-```mermaid
-%%{init: {'theme':'forest'}}%%
-mindmap
-  root((DEP))
-      0
-        Управление зависимостями в исходном коде осуществляется в каком-либо виде
-      1
-        1 Существуют и формализованы единые правила, определяющие возможность использования тех или иных зависимостей в коде. Например, есть утвержденный документ, и/или страница в базе знаний, описывающие порядок использования зависимостей в коде.
-        2 Обновление существующих зависимостей выполняется вручную. Например, если возникла необходимость использовать новую версию библиотеки в коде, то ее вручную выгружают и добавляют в проект
-        3 Существует - описан, формализован, план реагирования на события ИБ, связанных с зависимостями.
-        4 Выполняется харденинг - безопасная настройка, файлов конфигураций используемых пакетов open source software - OSS - например, nuget.config, .npmrc, pip.conf, pom.xml, etc. 
-        5 Зависимости с тэгом "latest" не применяются
-      2
-        1 Разработчики получают и используют OSS компоненты, применяя только стандартизованные - формализованные и утвержденные методы
-        2 Контролируется и регулируется использование новых - моложе 60 дней и старых - неактуальных, заброшенных, старше 365 дней OSS. Например, настроен OSS firewall на предупреждение или запрет использования OSS, выпущенных\актуализированных более 365 дней назад и менее чем 60 дней
-      3
-        1 Выполняется инвентаризация используемых зависимостей. Например, создан внутренний репозиторий.
-        2 При выполнении Pull/Merge request предоставляется список всех уязвимостей используемых зависимостей. Это может быть реализовано с помощью SCA системы.
-        3 Выполняется верификация цифровой подписи SBOM перед использованием зависимостей в сборке. Это может быть реализовано с помощью SCA системы.
-        4 Выполняется автоматическое обновление используемых зависимостей. Это может быть реализовано с помощью специальных утилит для обновления зависимостей.
-      4
-        1 Выполняется самостоятельная сборка необходимых зависимостей в доверенной среде
-        2 Выполняется создание и проверка цифровой подписи собранных зависимостей. Например, с помощью Cosign
-        3 Выполняется создание и проверка цифровой подписи на SBOM для собранных зависимостей. Например, с помощью Cosign
-```
+### Execution
 
-### ART Управление артефактами	
+<table>
+  <tr>
+   <td>Techniques
+   </td>
+   <td>Description
+   </td>
+   <td>Mitigation
+   </td>
+  </tr>
+  <tr>
+   <td>Modify CI/CD Configuration
+   </td>
+   <td>Modify CI/CD Configuration on Git Repository
+<p>
+(CircleCI: .circleci/config.yml, CodeBuild: buildspec.yml, CloudBuild: cloudbuild.yaml, GitHub Actions: .github/workflows/*.yaml)
+   </td>
+   <td>
+<ol>
 
-```mermaid
-%%{init: {'theme':'forest'}}%%
-mindmap
-  root((ART))    
-    0 
-        1 Управление артефактами разработки присутствует в каком-либо виде
-    1
-        1 Все артефакты разработки хранятся в доверенных registry. Например, используется внутренний реестр.
-        2 Строго ограниченный перечень лиц может помещать артефакты в registry. Внутри registry настроены правила разграничения доступа.
-        3 Для аутентификации в registry используются внешние сервисы. Например, выполнена интеграция с LDAP или другим IdM, локальные учетные записи не используются.
-        4 Отключен анонимный доступ в registry
-        5 Настроен и включен аудит любых изменений конфигурации хранилищ артефактов
-    2
-        1 Разработчики получают артефакты для дальнейшей работы только из внутренних репозиториев
-        2 Выполняется создание хэш сумм артефактов перед отправкой их в registry, а также их проверка при сборке
-        3 Для взаимодействия с registry используются webhook с использованием TLS версии не ниже 1.2
-    3
-        1 Выполняется создание цифровых подписей всех артефактов перед их отправкой в registry
-        2 Для всех артефактов создается SBOM 
-        3 Используется многофакторная аутентификация для доступа к registry
-        4 Конвейер сборки - build pipeline подписывает все артефакты, которые он создает 
-    4
-        1 Выполняется шифрование всех артефактов в registry.
+<li>(Git Repository) Only allow pushing of signed commits
 
-```
+<li>(CI, CD) Disallow CI/CD config modification without review (CI/CD must not follow changes of a branch without review)
 
-# Домен Защита окружения разработки (T-DEV)
+<li>(CI, CD) Add signature to CI/CD config and verify it
 
-```mermaid
-%%{init: {'theme':'forest'}}%%
-mindmap
-  root((T-DEV))
-    COMP Защита рабочих мест разработчика
-      0
-        1 Применяются практики защиты рабочих мест разработчиков
-```
+<li>(CI, CD) Limit egress connections via Proxy and IP restrictions
+
+<li>(CI, CD) Audit Logging of activities
+
+<li>(CI, CD) Security Monitoring using IDS/IPS, and EDR
+</li>
+</ol>
+   </td>
+  </tr>
+  <tr>
+   <td>Inject code to IaC configuration
+   </td>
+   <td>For example, Terraform allows code execution and file inclusion. The code is executed during CI(plan stage)
+<p>
+Code Execution: Provider installation(put provider binary with .tf), Use External provider <br>
+File inclusion: file Function
+   </td>
+   <td>
+<ol>
+
+<li>(Git Repository) Only allow pushing of signed commits
+
+<li>(CI, CD) Restrict dangerous code through Policy as Code
+
+<li>(CI, CD) Restrict untrusted providers
+
+<li>(CI, CD) Limit egress connections via Proxy and IP restrictions
+
+<li>(CI, CD) Audit Logging of activities
+
+<li>(CI, CD) Security Monitoring using IDS/IPS, and EDR
+</li>
+</ol>
+   </td>
+  </tr>
+  <tr>
+   <td>Inject code to source code
+   </td>
+   <td>Application executes test code during CI
+   </td>
+   <td>
+<ol>
+
+<li>(CI, CD) Restrict dangerous code through Policy as Code
+
+<li>(CI, CD) Limit egress connections via Proxy and IP restrictions
+
+<li>(CI, CD) Audit Logging of the activities
+
+<li>(CI, CD) Security Monitoring using IDS/IPS, and EDR
+</li>
+</ol>
+   </td>
+  </tr>
+  <tr>
+   <td>Supply Chain Compromise on CI/CD
+   </td>
+   <td>(Repeated)
+   </td>
+   <td>
+   </td>
+  </tr>
+  <tr>
+   <td>Inject bad dependency
+   </td>
+   <td>Inject bad dependency
+   </td>
+   <td>
+<ol>
+
+<li>(CI, CD) Code checks by SCA(Software composition analysis)
+
+<li>(CI, CD) Restrict untrusted libraries, and tools
+
+<li>(CI, CD) Limit egress connections via Proxy and IP restrictions
+
+<li>(CI, CD) Audit Logging of activities
+
+<li>(CI, CD) Security Monitoring using IDS/IPS, and EDR
+</li>
+</ol>
+   </td>
+  </tr>
+  <tr>
+   <td>SSH to CI/CD pipelines
+   </td>
+   <td>Connect to CI/CD pipeline servers via SSH or Valid Token
+   </td>
+   <td>
+<ol>
+
+<li>(CI, CD) Implement strict access control to CI/CD pipeline servers
+
+<li>(CI, CD) Disallow SSH access
+</li>
+</ol>
+   </td>
+  </tr>
+</table>
