@@ -2,8 +2,6 @@
 
 ### DEP Контроль использования сторонних компонентов
 
-### Execution
-
 <table>
   <tr>
    <td>Techniques
